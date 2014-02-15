@@ -4,14 +4,20 @@ DEPS = ./deps
 BIN_DIR = ./bin
 EXPM = $(BIN_DIR)/expm
 LFE_DIR = $(DEPS)/lfe
+LFE_DIR = $(DEPS)/lfe
 LFE_EBIN = $(LFE_DIR)/ebin
 LFE = $(LFE_DIR)/bin/lfe
 LFEC = $(LFE_DIR)/bin/lfec
 LFE_UTILS_DIR = $(DEPS)/lfe-utils
 LFEUNIT_DIR = $(DEPS)/lfeunit
+JIFFY_DIR = $(DEPS)/jiffy
+EJ_DIR = $(DEPS)/ej
+LFE_REST_DIR = $(DEPS)/lfe-rest-client
 # Note that ERL_LIBS is for running this project in development and that
 # ERL_LIB is for installation.
-ERL_LIBS = $(LFE_DIR):$(LFE_UTILS_DIR):$(LFEUNIT_DIR):./
+ERL_LIBS1 = $(LFE_DIR):$(LFE_UTILS_DIR):$(LFEUNIT_DIR)
+ERL_LIBS2 = $(JIFFY_DIR):$(EJ_DIR):$(LFE_REST_DIR)
+ERL_LIBS = $(ERL_LIBS1):$(ERL_LIBS2):./
 SOURCE_DIR = ./src
 OUT_DIR = ./ebin
 TEST_DIR = ./test
@@ -61,6 +67,8 @@ clean-eunit:
 	rm -rf $(TEST_OUT_DIR)
 
 compile: get-deps clean-ebin
+	# jiffy has special needs
+	cd $(JIFFY_DIR) && rebar compile
 	rebar compile
 
 compile-no-deps: clean-ebin
@@ -69,6 +77,7 @@ compile-no-deps: clean-ebin
 compile-tests: clean-eunit
 	mkdir -p $(TEST_OUT_DIR)
 	ERL_LIBS=$(ERL_LIBS) $(LFEC) -o $(TEST_OUT_DIR) $(TEST_DIR)/*_tests.lfe
+	-ERL_LIBS=$(ERL_LIBS) $(LFEC) -o $(OUT_DIR) $(TEST_DIR)/testing-*.lfe
 
 shell: compile
 	clear
@@ -76,7 +85,11 @@ shell: compile
 
 shell-no-deps: compile-no-deps
 	clear
-	@ERL_LIBS=$(ERL_LIBS) $(LFE) -pa $(TEST_OUT_DIR)
+	ERL_LIBS=$(ERL_LIBS) $(LFE) -pa $(TEST_OUT_DIR)
+
+erl-shell: compile-no-deps
+	clear
+	ERL_LIBS=$(ERL_LIBS) erl -pa $(TEST_OUT_DIR)
 
 clean: clean-ebin clean-eunit
 	rebar clean
